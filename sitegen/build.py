@@ -22,7 +22,8 @@ def page_title(md: str, fallback: str) -> str:
     for line in md.splitlines():
         match = re.match(r"^#\s+(.*)$", line.strip())
         if match:
-            return match.group(1).strip()
+            # Titles are plain text: drop backticks and emphasis marks.
+            return re.sub(r"[`*]", "", match.group(1)).strip()
     return fallback
 
 
@@ -33,13 +34,17 @@ def build(src: Path, out: Path) -> int:
     out.mkdir(parents=True, exist_ok=True)
     pages = []
     for md_file in sorted(src.glob("*.md")):
-        text = md_file.read_text(encoding="utf-8")
+        # utf-8-sig drops a byte-order mark, which would otherwise hide the first heading.
+        text = md_file.read_text(encoding="utf-8-sig")
         title = page_title(text, md_file.stem)
         name = md_file.stem + ".html"
         page = TEMPLATE.format(title=html.escape(title), body=convert(text))
         (out / name).write_text(page, encoding="utf-8")
         pages.append((title, name))
-    items = "\n".join(f'<li><a href="{name}">{html.escape(title)}</a></li>' for title, name in pages)
+    items = "\n".join(
+        f'<li><a href="{html.escape(name, quote=True)}">{html.escape(title)}</a></li>'
+        for title, name in pages
+    )
     index_body = f"<h1>Index</h1>\n<ul>\n{items}\n</ul>"
     (out / "index.html").write_text(
         TEMPLATE.format(title="Index", body=index_body), encoding="utf-8"

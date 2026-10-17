@@ -10,15 +10,17 @@ import re
 
 def _inline(text: str) -> str:
     """Render inline markup. Code spans are split out first so their text is left alone."""
-    parts = text.split("`")
+    # An unmatched backtick means no code spans at all, so the text stays literal.
+    parts = text.split("`") if text.count("`") % 2 == 0 else [text]
     out = []
     for i, part in enumerate(parts):
         escaped = html.escape(part, quote=False)
         if i % 2 == 1:
             out.append(f"<code>{escaped}</code>")
         else:
-            escaped = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", escaped)
-            escaped = re.sub(r"\*(.+?)\*", r"<em>\1</em>", escaped)
+            escaped = re.sub(r"\*\*(?!\s)(.+?)(?<!\s)\*\*", r"<strong>\1</strong>", escaped)
+            # A lone * followed or preceded by a space is literal, so "2 * 3 * 4" stays as written.
+            escaped = re.sub(r"\*(?!\s)(.+?)(?<!\s)\*", r"<em>\1</em>", escaped)
             out.append(escaped)
     return "".join(out)
 
