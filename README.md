@@ -8,4 +8,4 @@ Links and images are not supported yet.
 
 Build a site: `python3 -m sitegen.build <source-dir> <output-dir>`
 
-Run the tests: `python3 -m unittest -q tests.test_markdown tests.test_build`
+Run the tests: `python3 -m unittest -q tests.test_build tests.test_fixes tests.test_markdown`

@@ -1,8 +1,10 @@
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
 
-from sitegen.build import build, page_title
+from sitegen.build import build, main, page_title
 
 
 class TestPageTitle(unittest.TestCase):
@@ -36,6 +38,25 @@ class TestBuild(unittest.TestCase):
             (src / "index.md").write_text("# Nope\n", encoding="utf-8")
             with self.assertRaises(ValueError):
                 build(src, Path(tmp) / "out")
+
+
+class TestMain(unittest.TestCase):
+    def test_wrong_argument_count_prints_usage_and_returns_2(self):
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertEqual(main(["sitegen.build", "only-one-arg"]), 2)
+        self.assertIn("usage: python3 -m sitegen.build", err.getvalue())
+
+    def test_builds_and_reports_page_count(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "src"
+            src.mkdir()
+            (src / "a.md").write_text("# A\n", encoding="utf-8")
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(main(["sitegen.build", str(src), str(Path(tmp) / "out")]), 0)
+            self.assertEqual(out.getvalue(), "built 1 page(s) plus index\n")
+            self.assertTrue((Path(tmp) / "out" / "index.html").exists())
 
 
 if __name__ == "__main__":
